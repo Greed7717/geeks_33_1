@@ -1,0 +1,38 @@
+import os
+
+TOKEN = os.environ.get('BOT_TOKEN')
+import sqlite3
+
+conn = sqlite3.connect('telegram_users.db')
+cursor = conn.cursor()
+
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY,
+        username TEXT,
+        chat_id INTEGER
+    )
+''')
+
+conn.commit()
+conn.close()
+import sqlite3
+
+def handle_start_command(update, context):
+    user = update.effective_user
+    chat_id = update.message.chat_id
+
+    conn = sqlite3.connect('telegram_users.db')
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT * FROM users WHERE chat_id = ?', (chat_id,))
+    existing_user = cursor.fetchone()
+
+    if existing_user:
+        update.message.reply_text('Вы уже зарегистрированы.')
+    else:
+        cursor.execute('INSERT INTO users (username, chat_id) VALUES (?, ?)', (user.username, chat_id))
+        conn.commit()
+        update.message.reply_text('Вы зарегистрированы.')
+
+    conn.close()
